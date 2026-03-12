@@ -6,11 +6,15 @@ PUBKEY='ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILHyCCjfumlggIzuvOa19pD5v5J61Axs7YUn
 USER_SHELL="/bin/bash"
 
 log() {
-    printf '%s\n' "$*"
+    printf '[+] %s\n' "$*"
+}
+
+warn() {
+    printf '[!] %s\n' "$*" >&2
 }
 
 fail() {
-    printf 'ERROR: %s\n' "$*" >&2
+    printf '[x] %s\n' "$*" >&2
     exit 1
 }
 
@@ -87,8 +91,8 @@ EOF
         fi
     fi
 
-    log "WARNING: Could not configure sudo automatically."
-    log "WARNING: sudo may not be installed, or no recognized admin method was found."
+    warn "Could not configure sudo automatically."
+    warn "sudo may not be installed, or no recognized admin method was found."
 }
 
 add_ssh_key() {

@@ -15,9 +15,7 @@ fail() {
 }
 
 need_root() {
-    if [ "$(id -u)" -ne 0 ]; then
-        fail "Run this script as root."
-    fi
+    [ "$(id -u)" -eq 0 ] || fail "This script must be run as root."
 }
 
 command_exists() {
