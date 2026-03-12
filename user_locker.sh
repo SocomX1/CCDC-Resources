@@ -341,8 +341,6 @@ review_and_confirm_targets() {
     exit 0
   fi
 
-  # print_target_list "$TARGETS_FILE" "The following local accounts are NOT in the allowlist and are initially marked for lockdown:"
-
   if ! review_targets "$TARGETS_FILE" "$REVIEWED_TARGETS_FILE"; then
     log "No accounts remain selected for lockdown."
     exit 0
