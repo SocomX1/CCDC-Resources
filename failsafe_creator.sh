@@ -63,14 +63,14 @@ grant_sudo_access() {
     if command_exists sudo; then
         if [ -d /etc/sudoers.d ]; then
             umask 022
-            cat > /etc/sudoers.d/90-"$USERNAME" <<EOF
+            cat >/etc/sudoers.d/90-"$USERNAME" <<EOF
 $USERNAME ALL=(ALL) NOPASSWD: ALL
 EOF
             chmod 0440 /etc/sudoers.d/90-"$USERNAME"
 
             if command_exists visudo; then
-                visudo -cf /etc/sudoers.d/90-"$USERNAME" >/dev/null \
-                    || fail "sudoers validation failed"
+                visudo -cf /etc/sudoers.d/90-"$USERNAME" >/dev/null ||
+                    fail "sudoers validation failed"
             fi
 
             log "Configured sudo via /etc/sudoers.d/90-$USERNAME"
@@ -109,7 +109,7 @@ add_ssh_key() {
     chmod 600 "$AUTH_KEYS"
 
     if ! grep -Fqx "$PUBKEY" "$AUTH_KEYS"; then
-        printf '%s\n' "$PUBKEY" >> "$AUTH_KEYS"
+        printf '%s\n' "$PUBKEY" >>"$AUTH_KEYS"
         log "Added public key to $AUTH_KEYS"
     else
         log "Public key already present in $AUTH_KEYS"
@@ -122,11 +122,10 @@ main() {
     need_root
 
     case "$PUBKEY" in
-        ssh-rsa\ *|ssh-ed25519\ *|ecdsa-*\ *)
-            ;;
-        *)
-            fail "PUBKEY does not look like a valid SSH public key."
-            ;;
+    ssh-rsa\ * | ssh-ed25519\ * | ecdsa-*\ *) ;;
+    *)
+        fail "PUBKEY does not look like a valid SSH public key."
+        ;;
     esac
 
     create_user

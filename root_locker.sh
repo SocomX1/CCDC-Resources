@@ -52,7 +52,7 @@ remove_root_ssh_keys() {
 
     if [ -f "$remove_auth_keys" ]; then
         backup_file "$remove_auth_keys"
-        : > "$remove_auth_keys"
+        : >"$remove_auth_keys"
         chmod 600 "$remove_auth_keys" || true
         log "Cleared root authorized_keys."
     else
@@ -82,7 +82,7 @@ harden_sshd_config() {
 
     mkdir -p "$harden_ddir"
 
-    cat > "$harden_dropin" <<'EOF'
+    cat >"$harden_dropin" <<'EOF'
 # Managed by root lockdown script
 PermitRootLogin no
 EOF
