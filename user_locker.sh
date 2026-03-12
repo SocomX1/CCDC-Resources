@@ -1,6 +1,8 @@
 #!/usr/bin/env sh
 set -eu
 
+ADMIN_ACCOUNT_USERNAME="failsafe"
+
 log() {
   printf '[+] %s\n' "$*"
 }
@@ -320,7 +322,7 @@ build_target_list() {
   while IFS=: read -r username _ uid _ _ home shell; do
     [ -n "$username" ] || continue
     [ "$username" = "root" ] && continue
-    [ "$username" = "failsafe" ] && continue
+    [ "$username" = $ADMIN_ACCOUNT_USERNAME ] && continue
 
     case "$uid" in
     '' | *[!0-9]*) continue ;;
