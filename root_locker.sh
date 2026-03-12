@@ -1,5 +1,5 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/usr/bin/env sh
+set -eu
 
 log() {
     printf '[+] %s\n' "$*"
@@ -15,7 +15,7 @@ fail() {
 }
 
 need_root() {
-    if [ "${EUID:-$(id -u)}" -ne 0 ]; then
+    if [ "$(id -u)" -ne 0 ]; then
         fail "Run this script as root."
     fi
 }
@@ -25,10 +25,9 @@ command_exists() {
 }
 
 backup_file() {
-    local file="$1"
-    local ts
-    ts="$(date +%Y%m%d-%H%M%S 2>/dev/null || echo backup)"
-    cp -p -- "$file" "$file.bak.$ts"
+    backup_file_path=$1
+    backup_ts=$(date +%Y%m%d-%H%M%S 2>/dev/null || echo backup)
+    cp -p -- "$backup_file_path" "$backup_file_path.bak.$backup_ts"
 }
 
 lock_root_password() {
@@ -49,58 +48,14 @@ lock_root_password() {
     warn "Could not lock root password automatically."
 }
 
-# expire_root_password() {
-#     if command_exists chage; then
-#         if chage -E 0 root >/dev/null 2>&1; then
-#             log "Expired root account with chage -E 0."
-#         else
-#             warn "Could not expire root account with chage."
-#         fi
-#     else
-#         warn "chage not found; skipping account expiration."
-#     fi
-# }
-
-# set_root_nologin_shell() {
-#     local nologin_shell=""
-
-#     for shell in /usr/sbin/nologin /sbin/nologin /bin/false; do
-#         if [ -x "$shell" ]; then
-#             nologin_shell="$shell"
-#             break
-#         fi
-#     done
-
-#     if [ -z "$nologin_shell" ]; then
-#         warn "No nologin shell found; skipping shell change."
-#         return
-#     fi
-
-#     if command_exists chsh; then
-#         if chsh -s "$nologin_shell" root >/dev/null 2>&1; then
-#             log "Set root shell to $nologin_shell with chsh."
-#             return
-#         fi
-#     fi
-
-#     if command_exists usermod; then
-#         if usermod -s "$nologin_shell" root >/dev/null 2>&1; then
-#             log "Set root shell to $nologin_shell with usermod."
-#             return
-#         fi
-#     fi
-
-#     warn "Could not change root shell."
-# }
-
 remove_root_ssh_keys() {
-    local ssh_dir="/root/.ssh"
-    local auth_keys="$ssh_dir/authorized_keys"
+    remove_ssh_dir=/root/.ssh
+    remove_auth_keys=$remove_ssh_dir/authorized_keys
 
-    if [ -f "$auth_keys" ]; then
-        backup_file "$auth_keys"
-        : > "$auth_keys"
-        chmod 600 "$auth_keys" || true
+    if [ -f "$remove_auth_keys" ]; then
+        backup_file "$remove_auth_keys"
+        : > "$remove_auth_keys"
+        chmod 600 "$remove_auth_keys" || true
         log "Cleared root authorized_keys."
     else
         log "No root authorized_keys file found."
@@ -108,34 +63,34 @@ remove_root_ssh_keys() {
 }
 
 harden_sshd_config() {
-    local sshd_config=""
-    local ddir=""
-    local dropin=""
+    harden_sshd_config_path=
+    harden_ddir=
+    harden_dropin=
 
-    for f in /etc/ssh/sshd_config /etc/openssh/sshd_config; do
-        if [ -f "$f" ]; then
-            sshd_config="$f"
+    for harden_candidate in /etc/ssh/sshd_config /etc/openssh/sshd_config; do
+        if [ -f "$harden_candidate" ]; then
+            harden_sshd_config_path=$harden_candidate
             break
         fi
     done
 
-    if [ -z "$sshd_config" ]; then
+    if [ -z "$harden_sshd_config_path" ]; then
         warn "sshd_config not found; skipping SSH hardening."
         return
     fi
 
-    ddir="$(dirname "$sshd_config")/sshd_config.d"
-    dropin="$ddir/99-disable-root-login.conf"
+    harden_ddir=$(dirname "$harden_sshd_config_path")/sshd_config.d
+    harden_dropin=$harden_ddir/99-disable-root-login.conf
 
-    mkdir -p "$ddir"
+    mkdir -p "$harden_ddir"
 
-    cat > "$dropin" <<'EOF'
+    cat > "$harden_dropin" <<'EOF'
 # Managed by root lockdown script
 PermitRootLogin no
 EOF
 
-    chmod 644 "$dropin"
-    log "Wrote SSH drop-in: $dropin"
+    chmod 644 "$harden_dropin"
+    log "Wrote SSH drop-in: $harden_dropin"
 
     if command_exists sshd; then
         if sshd -t >/dev/null 2>&1; then
@@ -170,8 +125,6 @@ EOF
     warn "Could not reload sshd automatically. Reload it manually."
 }
 
-# Doesn't currently make use of expire_root_password or set_root_nologin_shell
-# in order to make the script more easily reversible.
 main() {
     need_root
 
@@ -180,7 +133,7 @@ main() {
     lock_root_password
     remove_root_ssh_keys
     harden_sshd_config
-    
+
     log "Root lockdown complete."
 }
 
